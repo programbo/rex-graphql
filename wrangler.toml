@@ -1,0 +1,9 @@
+name = "rex-graphql"
+main = "src/index.ts"
+compatibility_date = "2022-10-12"
+
+kv_namespaces = [
+  { binding = "REX_KV", id = "5bc2714593d3413dadbd9fa5e54beb44", preview_id = "516c0b72c8bb4df59d4fea4431638dd9" },
+]
+
+[vars]

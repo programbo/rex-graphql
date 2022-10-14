@@ -1,0 +1,20 @@
+{
+  "name": "rex-graphql",
+  "version": "0.0.0",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^3.16.0",
+    "typescript": "^4.8.4",
+    "wrangler": "2.1.11"
+  },
+  "private": true,
+  "scripts": {
+    "start": "wrangler dev",
+    "deploy": "wrangler publish"
+  },
+  "dependencies": {
+    "@fastify/deepmerge": "^1.1.0",
+    "deepmerge": "^4.2.2",
+    "xstate": "^4.33.6",
+    "zod": "^3.19.1"
+  }
+}
