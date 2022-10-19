@@ -17,25 +17,13 @@ const defaultListingBody = {
 } as const
 
 export const queryConfigs = {
-  auth: {
-    requiresToken: false,
-    endpoint: '/v1/rex/Authentication/login',
-    body: {
-      email: REX_USERNAME,
-      password: REX_PASSWORD,
-      token_lifetime: '604800', // 7 days
-    },
-    responseValidator: authResponseSchema,
-  },
   listings: {
-    requiresToken: true,
-    endpoint: '/v1/rex/listings/search',
+    endpoint: '/listings/search',
     body: defaultListingBody,
     responseValidator: listingsResponseSchema,
   },
   explore: {
-    requiresToken: true,
-    endpoint: '/v1/rex/listings/search',
+    endpoint: '/listings/search',
     body: defaultListingBody,
     payloadValidator: z.string().transform((suburb) => ({
       criteria: [{ 'property.adr_suburb_or_town': suburb }],
@@ -43,8 +31,7 @@ export const queryConfigs = {
     responseValidator: listingsResponseSchema,
   },
   listing: {
-    requiresToken: true,
-    endpoint: '/v1/rex/listings/read',
+    endpoint: '/listings/read',
     payloadValidator: z
       .string()
       .or(z.number())
@@ -52,8 +39,7 @@ export const queryConfigs = {
     responseValidator: listingResponseSchema,
   },
   suburbs: {
-    requiresToken: true,
-    endpoint: '/v1/rex/published-listings/get-unique-listing-suburbs',
+    endpoint: '/published-listings/get-unique-listing-suburbs',
     responseValidator: suburbsResponseSchema,
   },
 } as const

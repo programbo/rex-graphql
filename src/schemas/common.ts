@@ -19,20 +19,20 @@ export const listingUserSchema = z
   .nullable()
 
 export const listingAssetSchema = z.object({
-  uri: z.string(),
+  // uri: z.string(),
   url: z.string(),
 })
 
 export const listingImageSchema = listingAssetSchema
   .extend({
-    thumbs: z.record(listingAssetSchema),
+    // thumbs: z.record(listingAssetSchema),
   })
   .nullable()
 
 export const rexEnumSchema = z
   .object({
     id: z.union([z.string(), z.number()]).nullable(),
-    text: z.string().nullable(),
+    text: z.string().nullable().optional(),
   })
   .nullable()
 
@@ -59,17 +59,17 @@ export const propertyCoreAttributesSchema = z.object({
   attr_buildarea_max: z.number().or(z.string()).nullable(),
   attr_buildarea_unit: rexEnumSchema,
   attr_buildarea: z.number().or(z.string()).nullable(),
-  attr_is_corner_block: z.number().or(z.string()).nullable(),
-  attr_land_depth_left: z.number().or(z.string()).nullable(),
-  attr_land_depth_rear: z.number().or(z.string()).nullable(),
-  attr_land_depth_right: z.number().or(z.string()).nullable(),
-  attr_land_frontage: z.number().or(z.string()).nullable(),
-  attr_landarea_m2: z.number().or(z.string()).nullable(),
-  attr_landarea_unit: rexEnumSchema,
-  attr_landarea: z.number().or(z.string()).nullable(),
-  attr_roi_pa: z.number().or(z.string()).nullable(),
-  attr_sleeps: z.number().or(z.string()).nullable(),
-  attr_takings: z.number().or(z.string()).nullable(),
+  attr_is_corner_block: z.number().or(z.string()).nullable().optional(),
+  attr_land_depth_left: z.number().or(z.string()).nullable().optional(),
+  attr_land_depth_rear: z.number().or(z.string()).nullable().optional(),
+  attr_land_depth_right: z.number().or(z.string()).nullable().optional(),
+  attr_land_frontage: z.number().or(z.string()).nullable().optional(),
+  attr_landarea_m2: z.number().or(z.string()).nullable().optional(),
+  attr_landarea_unit: rexEnumSchema.optional(),
+  attr_landarea: z.number().or(z.string()).nullable().optional(),
+  attr_roi_pa: z.number().or(z.string()).nullable().optional(),
+  attr_sleeps: z.number().or(z.string()).nullable().optional(),
+  attr_takings: z.number().or(z.string()).nullable().optional(),
   attr_total_car_accom: z.number().or(z.string()).nullable(),
 })
 
@@ -101,12 +101,10 @@ export const listingAgentSchema = z
   })
   .nullable()
 
-export const listingSolicitorSchema = z
+export const listingContactSchema = z
   .object({
     address_postal: z.string().nullable(),
     address: z.string().nullable(),
-    company_abn: z.string().nullable(),
-    company_size: z.string().nullable(),
     contact_image: z.string().nullable(),
     email_address: z.string(),
     etag: z.string(),
@@ -125,8 +123,8 @@ export const listingSolicitorSchema = z
     name_last: z.string().nullable(),
     name_legal: z.string().nullable(),
     name_salutation: z.string().nullable(),
-    name: z.string(),
-    phone_number: z.string(),
+    name: z.string().nullable(),
+    phone_number: z.string().nullable(),
     system_ctime: z.string(),
     system_modtime: z.string(),
     system_owner_user: listingUserSchema,
@@ -135,13 +133,21 @@ export const listingSolicitorSchema = z
   })
   .nullable()
 
+export const listingCompanyContactSchema = listingContactSchema
+  .unwrap()
+  .extend({
+    company_abn: z.string().nullable(),
+    company_size: z.string().nullable(),
+  })
+  .nullable()
+
 export const listingExtendedImageSchema = listingImageSchema.unwrap().extend({
-  id: z.number(),
-  system_modtime: z.number(),
-  priority: z.string(),
-  inbound_original_src_url: z.string().nullable(),
-  inbound_last_update: z.string().nullable(),
-  inbound_index: z.string().nullable(),
+  // id: z.number(),
+  // system_modtime: z.number(),
+  // priority: z.string(),
+  // inbound_original_src_url: z.string().nullable(),
+  // inbound_last_update: z.string().nullable(),
+  // inbound_index: z.string().nullable(),
 })
 
 export const listingExtendedAttributesSchema = z.object({
@@ -184,11 +190,11 @@ export const listingExtendedPropertySchema = listingPropertySchema
     meta_rates_bodycorp: z.string().nullable(),
     meta_rates_business: z.string().nullable(),
     meta_rates_council_exempt: z.string().nullable(),
-    meta_rates_council: z.string(),
+    meta_rates_council: z.string().nullable(),
     meta_rates_domestic: z.string().nullable(),
     meta_rates_land: z.string().nullable(),
     meta_rates_other: z.string().nullable(),
-    meta_rates_water: z.string(),
+    meta_rates_water: z.string().nullable(),
     meta_tax_band: z.string().nullable(),
     meta_zone: z.string().nullable(),
     property_subcategory_id: z.string().nullable(),

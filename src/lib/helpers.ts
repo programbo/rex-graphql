@@ -1,6 +1,5 @@
 import deepmerge from '@fastify/deepmerge'
 import { z } from 'zod'
-import { Context } from '../rex.machine'
 import { queryConfigs } from './config'
 import { QueryType, QueryConfig, QueryConfigArgs, QueryContext } from './types'
 
@@ -12,25 +11,20 @@ export const validatePayload = <
     ? QueryConfig[T]['payloadValidator']['_input']
     : unknown
 >(
-  query: T,
+  route: T,
   payload: P
 ) => {
-  const config: QueryConfig[T] = queryConfigs[query]
+  const config: QueryConfig[T] = queryConfigs[route]
   if (payload && 'payloadValidator' in config) {
-    try {
-      return config.payloadValidator.parse(payload)
-    } catch (error) {
-      throw new Error(`Payload doesn't match the "${query}" schema.\n${error}`)
-    }
+    return config.payloadValidator.parse(payload)
   }
-  return
 }
 
 export const buildQueryConfig = ({
-  query,
+  route,
   ...args
-}: QueryConfigArgs<Context>): QueryContext => {
-  const queryConfig = queryConfigs[query]
+}: QueryConfigArgs): QueryContext => {
+  const queryConfig = queryConfigs[route]
   const endpoint = queryConfig.endpoint
   const body = 'body' in queryConfig ? queryConfig.body : undefined
   const payload = 'payload' in args ? args.payload : undefined
@@ -42,12 +36,11 @@ export const buildQueryConfig = ({
     'content-type': 'application/json;charset=UTF-8',
     ...bearer,
   }
-
   const config: RequestInit = {
     method: 'POST',
     headers,
-    body: JSON.stringify(merge(body, payload)),
+    body: JSON.stringify(merge(body || {}, payload || {})),
   }
 
-  return { query, endpoint, config } as QueryContext
+  return { route, endpoint, config } as QueryContext
 }

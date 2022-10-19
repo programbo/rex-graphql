@@ -13,29 +13,27 @@ import { rexMetaSchema } from './common'
 //   .or(errorResponseSchema)
 //   .or(authResponseSchema)
 
-export const responseSchema = z.intersection(
-  rexMetaSchema,
+// export const responseSchema = z.intersection(
+//   rexMetaSchema,
+//   z
+//     .union([
+//       authResponseSchema,
+//       listingResponseSchema,
+//       listingsResponseSchema,
+//       suburbsResponseSchema,
+//     ])
+//     .or(errorResponseSchema)
+// )
+
+export const responseSchema = errorResponseSchema.or(
   z.union([
-    authResponseSchema,
     listingResponseSchema,
     listingsResponseSchema,
     suburbsResponseSchema,
-    errorResponseSchema,
   ])
 )
 
 export type QueryResponse = z.infer<typeof responseSchema>
-// export const responseSchema = {
-//   listing: listingResponseSchema.or(errorResponseSchema),
-//   listings: listingsResponseSchema.or(errorResponseSchema),
-//   explore: listingsResponseSchema.or(errorResponseSchema),
-//   suburbs: suburbsResponseSchema.or(errorResponseSchema),
-//   auth: authResponseSchema.or(errorResponseSchema),
-// } as const
-
-// export type QueryResponse<T extends keyof typeof responseSchema> = z.infer<
-//   typeof responseSchema[T]
-// >
 
 export * from './auth'
 export * from './listing'

@@ -11,14 +11,13 @@
 import { interpret } from 'xstate'
 import { waitFor } from 'xstate/lib/waitFor'
 import { queryConfigs } from './lib/config'
-import { validatePayload } from './lib/helpers'
-import type { QueryType, QueryEvent } from './lib/types'
+import type { QueryType } from './lib/types'
 
-import { rexMachine } from './rex.machine'
-import { authResponseSchema } from './schemas'
+import { rexDataMachine } from './rexData.machine'
 
 declare global {
   const REX_BASE_URL: string
+  const REX_AUTH_PATH: string
   const REX_USERNAME: string
   const REX_PASSWORD: string
   const REX_KV: KVNamespace
@@ -43,110 +42,59 @@ export interface Env {
  */
 const url = REX_BASE_URL + '/v1/rex/Authentication/login'
 
-/**
- * gatherResponse awaits and returns a response body as a string.
- * Use await gatherResponse(..) in an async function to get the response body
- * @param {Response} response
- */
-async function gatherResponse(response: Response) {
-  const { headers } = response
-  const contentType = headers.get('content-type') || ''
-  if (contentType.includes('application/json')) {
-    return JSON.stringify(await response.json())
-  }
-  return response.text()
-}
-
-async function handleRequest(query: QueryType, payload: string) {
+async function handleRequest(route: QueryType, payload: string) {
+  const startTime = Date.now()
   const init: ResponseInit = {
     headers: {
       'content-type': 'application/json;charset=UTF-8',
     },
   }
 
-  const rexService = interpret(
-    rexMachine.withConfig({
-      services: {
-        'Request auth token': async ({ config }) => {
-          console.log('CONFIG:', JSON.stringify(config, null, 2))
-          if (!config) {
-            throw new Error('No query config')
-          }
-          const response = await fetch(url, config)
-          const json = await response.json()
-          console.log('JSON:', JSON.stringify(json, null, 2))
-
-          try {
-            console.log(
-              'PARSE:',
-              JSON.stringify(authResponseSchema.parse(json), null, 2)
-            )
-          } catch (error) {
-            console.log('ERRORZ:', JSON.stringify(error, null, 2))
-          }
-          return { token: authResponseSchema.parse(json).result }
-        },
-        'Query API': async ({ endpoint, config }) => {
-          if (!query || !endpoint || !config) {
-            throw new Error('No query config')
-          }
-          if (!config) {
-            throw new Error("Can't query API without config")
-          }
-          try {
-            const url = `${REX_BASE_URL}${endpoint}`
-            const response = await fetch(url, config)
-            const json = await response.json()
-            console.log(JSON.stringify(json, null, 2))
-            const { result, error } =
-              queryConfigs[query].responseValidator.parse(json)
-
-            if (error) {
-              console.error('ERROR FROM SERVER', error)
-              throw new Error(error)
-            }
-            return result
-          } catch (error) {
-            console.error('OTHER ERROR', error)
-            throw new Error(`Error querying API: ${error}`)
-          }
-        },
-      },
+  const rexService = interpret(rexDataMachine)
+    .onTransition((state, { type, ...evt }) => {
+      console.log(
+        '🪵',
+        JSON.stringify(type),
+        '👉',
+        JSON.stringify(state.value),
+        // '🔎',
+        // '🎁',
+        // JSON.stringify(evt, null, 2),
+        '🧐\n'
+      )
     })
-  )
-    .onTransition((state, event) => {
-      // console.log(JSON.stringify(event, null, 2), state.value)
-    })
-    .start({ context: { cacheKey: [query, payload].join('/') } })
+    .start()
 
-  const readyState = await waitFor(rexService, (state) =>
-    state.matches('Ready')
-  )
-
-  if (readyState.context.response) {
-    return new Response(JSON.stringify(readyState.context.response), init)
-  }
+  rexService.send({
+    type: 'Call API',
+    route,
+    payload,
+  })
 
   try {
-    rexService.send({
-      type: 'Query API',
-      query,
-      payload: validatePayload(query, payload),
-    } as QueryEvent)
-
-    const completeState = await waitFor(
+    const { context } = await waitFor(
       rexService,
-      (state) => !!state.context.error || state.matches('Complete'),
+      (state) => !!state.context.error || !!state.context.response,
       { timeout: 20_000 }
     )
 
-    if (completeState.context.error) {
-      throw new Error('completeState.context.error')
+    if (context.error) {
+      throw new Error(context.error)
     }
 
-    return new Response(JSON.stringify(completeState.context.response), init)
-  } catch (error) {
-    return new Response(error as string, {
+    console.log(Date.now() - startTime + 'ms')
+
+    return new Response(JSON.stringify(context.response), init)
+  } catch (err) {
+    console.error(
+      `💥 In "${JSON.stringify(
+        rexService.getSnapshot().context.tokenRef?.getSnapshot()?.value,
+        null,
+        2
+      )}" 💥 -`,
+      err
+    )
+    return new Response(err as string, {
       ...init,
       status: 500,
     })
@@ -157,13 +105,19 @@ addEventListener('fetch', (event) => {
   const { pathname } = new URL(event.request.url)
   const [, query, payload] = pathname.split('/')
 
-  if (!query || !Object.keys(queryConfigs).includes(query)) {
+  if (!query) {
+    return event.respondWith(
+      new Response('Hello world', {
+        status: 500,
+      })
+    )
+  } else if (!Object.keys(queryConfigs).includes(query)) {
     return event.respondWith(
       new Response(`"${query}" is not a valid query type`, {
         status: 500,
       })
     )
   }
-
-  return event.respondWith(handleRequest(query as QueryType, payload))
+  event.respondWith(handleRequest(query as QueryType, payload))
+  return
 })

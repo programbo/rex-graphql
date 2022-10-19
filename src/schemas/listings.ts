@@ -3,7 +3,7 @@ import {
   listingAgentSchema,
   listingImageSchema,
   listingPropertySchema,
-  listingSolicitorSchema,
+  listingCompanyContactSchema,
   listingUserSchema,
   rexEnumSchema,
   rexMetaSchema,
@@ -99,7 +99,7 @@ const listingSchema = z.object({
   project_listing_status: z.string().nullable(),
   listing_agent_1: listingAgentSchema,
   listing_agent_2: listingAgentSchema,
-  legal_solicitor: listingSolicitorSchema,
+  legal_solicitor: listingCompanyContactSchema,
   legal_solicitor_contact: z.string().nullable(),
   location: rexEnumSchema,
   authority_type: rexEnumSchema.nullable(),
@@ -116,14 +116,16 @@ const listingSchema = z.object({
 })
 
 export const listingsResponseSchema = z.object({
+  error: z.null(),
   result: z.object({
-    rows: z.array(listingSchema),
+    rows: z.array(
+      listingSchema.transform(({ id, property }) => ({ id, property }))
+    ),
     total: z.number(),
     viewstate_id: z.null(),
     criteria: z.array(z.object({ name: z.string(), value: z.string() })),
     order_by: z.array(z.unknown()),
   }),
-  error: z.null(),
 })
 
 export type ListingsResponse = z.infer<typeof listingsResponseSchema>

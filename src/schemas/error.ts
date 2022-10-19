@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { rexMetaSchema } from './common'
 
-export const errorResponseSchema = rexMetaSchema.extend({
+export const errorResponseSchema = z.object({
   result: z.null(),
   error: z.object({
     message: z.string(),
