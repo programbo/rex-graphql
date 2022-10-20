@@ -8,12 +8,12 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-import { interpret } from 'xstate'
-import { waitFor } from 'xstate/lib/waitFor'
+import { createServer } from '@graphql-yoga/common'
+import { resolvers } from './graphql/resolvers'
+import { typeDefs } from './graphql/schemas'
 import { queryConfigs } from './lib/config'
+import { rex } from './lib/rex'
 import type { QueryType } from './lib/types'
-
-import { rexDataMachine } from './rexData.machine'
 
 declare global {
   const REX_BASE_URL: string
@@ -25,99 +25,57 @@ declare global {
 }
 
 export interface Env {
-  // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-  // MY_KV_NAMESPACE: KVNamespace;
-  //
-  // Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-  // MY_DURABLE_OBJECT: DurableObjectNamespace;
-  //
-  // Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-  // MY_BUCKET: R2Bucket;
   REX_KV: KVNamespace
 }
 
-/**
- * Replace url with the host you wish to send requests to
- * @param {string} url the URL to send the request to
- */
-const url = REX_BASE_URL + '/v1/rex/Authentication/login'
+const jsonHeader: ResponseInit = {
+  headers: {
+    'content-type': 'application/json;charset=UTF-8',
+  },
+}
 
-async function handleRequest(route: QueryType, payload: string) {
-  const startTime = Date.now()
-  const init: ResponseInit = {
-    headers: {
-      'content-type': 'application/json;charset=UTF-8',
-    },
-  }
-
-  const rexService = interpret(rexDataMachine)
-    .onTransition((state, { type, ...evt }) => {
-      console.log(
-        '🪵',
-        JSON.stringify(type),
-        '👉',
-        JSON.stringify(state.value),
-        // '🔎',
-        // '🎁',
-        // JSON.stringify(evt, null, 2),
-        '🧐\n'
-      )
-    })
-    .start()
-
-  rexService.send({
-    type: 'Call API',
-    route,
-    payload,
-  })
-
+async function fetchData(route: QueryType, payload: string) {
   try {
-    const { context } = await waitFor(
-      rexService,
-      (state) => !!state.context.error || !!state.context.response,
-      { timeout: 20_000 }
-    )
+    const response = await rex(route, payload)
 
-    if (context.error) {
-      throw new Error(context.error)
-    }
-
-    console.log(Date.now() - startTime + 'ms')
-
-    return new Response(JSON.stringify(context.response), init)
+    return new Response(JSON.stringify(response), jsonHeader)
   } catch (err) {
-    console.error(
-      `💥 In "${JSON.stringify(
-        rexService.getSnapshot().context.tokenRef?.getSnapshot()?.value,
-        null,
-        2
-      )}" 💥 -`,
-      err
-    )
+    console.error(JSON.stringify(err, null, 2))
     return new Response(err as string, {
-      ...init,
+      ...jsonHeader,
       status: 500,
     })
   }
 }
 
+function handlePostRequest() {
+  const server = createServer<Env>({
+    schema: {
+      typeDefs,
+      resolvers,
+    },
+    endpoint: '/gql',
+  })
+
+  return server.start()
+}
+
 addEventListener('fetch', (event) => {
   const { pathname } = new URL(event.request.url)
   const [, query, payload] = pathname.split('/')
+  const route = query || 'listings'
 
-  if (!query) {
+  if (route === 'gql') {
+    return handlePostRequest()
+  }
+
+  if (!Object.keys(queryConfigs).includes(route)) {
     return event.respondWith(
-      new Response('Hello world', {
-        status: 500,
-      })
-    )
-  } else if (!Object.keys(queryConfigs).includes(query)) {
-    return event.respondWith(
-      new Response(`"${query}" is not a valid query type`, {
+      new Response(`"${route}" is not a valid query type`, {
         status: 500,
       })
     )
   }
-  event.respondWith(handleRequest(query as QueryType, payload))
-  return
+
+  return event.respondWith(fetchData(route as QueryType, payload))
 })

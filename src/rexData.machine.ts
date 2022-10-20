@@ -2,6 +2,7 @@ import { createMachine, spawn, ActorRefFrom, assign, send } from 'xstate'
 import { sendTo } from 'xstate/lib/actions'
 import { queryConfigs } from './lib/config'
 import { buildQueryConfig, validatePayload } from './lib/helpers'
+import { request } from './lib/request'
 import { QueryConfigArgs, QueryEvent, QueryType } from './lib/types'
 import { rexAuthMachine } from './rexAuth.machine'
 import { QueryResponse } from './schemas'
@@ -40,7 +41,7 @@ type RexDataServices = {
 }
 
 export const rexDataMachine =
-  /** @xstate-layout N4IgpgJg5mDOIC5QCUwA8AEARAhgFxwDoBJCAGzAGIBhHMsjAQQAViBtABgF1FQAHAPawAlnmECAdrxBpEAWgAcAJiWEAjABYFAdg1rtAZgUaAbAE4ANCACeiNWo6EOS7WpcntAVgOfXCgL7+VqiYuAQk5FS09EysbGo8SCCCImKS0rIIihoahJ4artpmSkamljaIKo4mGp4cCgpqHgpGuoHB6Nj4RKQUNHQMLOxKifxCouJSSZly+aoGBTpKygb1Sp5WtggtTi5u2h7evmoBQSAhXeHUABZgAMYA1sISUBh3OHe3GABmAgBOGD+cEEElgUQ+X2uok4o2S4zSU1AMyUGlUnjM3iaZg4NXy2m0m0q2LyHC8zQ0HA4Zg0Zna506YSIN3uTxebwhYB+-0BwMkYP6n05ULw8VhKQm6Wm8hKqkpZgMZm0ygaZjcSkJCAVakIhhMJhx3hUhjUBjpF0ZhGZj2er3egq5AKBsBB-IAyk8+OzBTDpOKERlEPLCAZNAsCsV7DiTBrVgZCGZ5Sa3PV9QpPGaGd1CKgAI4AVzgeAwEG6lAAEjgJJEMGA-n9-j6kn7JgGEKZgy0E+ZtC4OAZ8RqHMUnK4ODkOJ4lJptBnQlncwXYEWSwRy5Xq06XWBG2NUi2pVlPG4dSaDCYSujtKTB33ckVPB4E-3PDoZ2dzfOwPnC8XS6gJGAADuNZoHwwhAhAGB4AIDxgBIO5wnukpIvI+jaiY9h1AY-ZpjUGg3vYTg0nUR4cCaCbpu+mbhKgdxgMIABukA8s6fJgIQro4ExLFbpQCHNshMjyJ2hAXmOIYeDUBjqhUCD5HG5jUkoNTFGYJhGLOlxELR9FMZBm5sRxXGcgZoJUKKvrwvuKGHq4hAKCYChUj4ymOf2GqYsGJgvmUVKRiYmkWjpjHMaZYKWhyPFsZQECSOxzwMTB7F2rcqCsWZ-FWYJMz6iYeTSWoL5KupbgbLJjmyusaaKsYY7OIFn50SF+m8mZEX2mFVC1vWfyEHwZD4L8fwALaEClYBpVumVIYiQlZD2Cj2coBT6KR8rRrJByOCaOI+CGqwlG+HRzjR9y6aFrX8tNEqzci6w6uiFJXk5OTLAoGoFJ4wb6D4NKKlqppUSdTK3NabJDVBSUSJaoOslAfHcJZM2tnI6y5BS3iuOexT5OUWyNNqRjKFVughgotJA1pMMsjaDqQ7B0NWnDfEJEjN0oxhokqn2aa1ZOBKbQ06imKSCqrLo6wNVcsO0xD0EM4QADqOATC8lCMHmeDXPTcE8k1enXf6B5yPieT4qq6ljnUDQyVsWM6ueapnrU+QBZTFpM7L3Ly3BSsq2IatoEu+DsTg3x4LWAAUdQcAAlJQH7SzT4Pe1Dfuq1AhvWXNWjxv2ujyioxj5MYGrk19HimC+5P1GpShSyDyevHLafKxnlBBwQEeEGHEd-NHlLx4njdg83qcK23AeZ6zTZZbdlRjoQ3lKgUFIYasfZl-UHbLesV5Tn2DfU6PdM+xIMVxYQwfd8Px9w6fUNZ9l0pqeo9jnhOGhag4+GyQ4Cw6gxI+eUXgdCUTOBIAQEA4DSFvr0MAbMjY2TkDVHUyhK7PmUHjOw2FRLmGwuJPQpgURH09mycadNOqIOzsidE8YzDKG8I5RyngHw3jMHgxMR4vA+CxkfBcP4Vw4Goc-LIShqSiW8BOMcRRnrvT-oVdGip9S6CKGAwGx0qYAFE6z-BEfPBAKJtCiTItXBhTDijyK2EOQmJopw1CnKYI69JgbZjOs1KKbVOLcSobPZGxtGhfRcHoQqJd+xng+nqdQrlCrk0jMYfh7i9KePCrQDql0EF+PZsbJUHCQxTiVNXI8G18Z0KpKwtS5NcmNESfrC66VwpYDivolGFSTwnBpLoWoU4ypbH1EElwuFBkom8rU86LUGmZN3Nk5BDRjFiS-k0A4X9baIGkhwtwepYmqgcAk92WYyFjwBGfO+NoWnGxUHlFQak3CKkVPUFoGp7YHCnCoZ2rDTCkJlinY5adUA4AgFsaZSC5qo2kk4WMRQxx-VjGXDE6hVH6HWBiZYbtNEe2+UcnW0NJ5nKySCzIO0OyrWMEs6kHgnlNAdkoeoa8ewqHrvspOJ8W4M3Ocgg6hAMb9iaOItG2CEDnmMS82lOJ6UqAbuy0FDhlJoOUqTUB4iNSzDjIqZYPZpKmFRMoQIgQgA */
+  /** @xstate-layout N4IgpgJg5mDOIC5QCUwA8AEARAhgFxwDoBJCAGzAGIBhHMsjAQQAViBtABgF1FQAHAPawAlnmECAdrxBpEAWgAcAJiWEAjABYFAdg1rtAZgUaAbAE4ANCACeiNWo6EOS7WpcntAVgOfXCgL7+VqiYuAQk5FS09EysbGo8SCCCImKS0rIIihoahJ4artpmSkamljaIKo4mGp4cCgpqHgpGuoHB6Nj4RKQUNHQMLOxKifxCouJSSZly+aoGBTpKygb1Sp5WtggtTi5u2h7evmoBQSAhXeHUABZgAMYA1sISUBh3OHe3GABmAgBOGD+cEEElgUQ+X2uok4o2S4zSU1AMyUGlUnjM3iaZg4NXy2m0m0q2LyHC8zQ0HA4Zg0Zna506YSIN3uTxebwhYB+-0BwMkYP6n05ULw8VhKQm6Wm8hKqkpZgMZm0ygaZjcSkJCAVakIhhMJhx3hUhjUBjpF0ZhGZj2er3egq5AKBsBB-IAyk8+OzBTDpOKERlEPLCAZNAsCsV7DiTBrVgZCGZ5Sa3PV9QpPGaGd1CKgAI4AVzgeAwEG6lAAEjgJJEMGA-n9-j6kn7JgGEKZgy0E+ZtC4OAZ8RqHMUnK4ODkOJ4lJptBnQlncwXYEWSwRy5Xq06XWBG2NUi2pVlPG4dSaDCYSujtKTB33ckVPB4E-3PDoZ2dzfOwPnC8XS6gJGAADuNZoHwwhAhAGB4AIDxgBIO5wnukpIvI+jaiY9h1AY-ZpjUGg3vYTg0nUR4cCaCbpu+mbhKgdxgMIABukA8s6fJgIQro4ExLFbpQCHNshMjyJ2hAXmOIYeDUBjqhUCD5HG5jUkoNTFGYJhGLOlxELR9FMZBm5sRxXGcgZoJUKKvrwvuKGHq4hAKCYChUj4ymOf2GqYsGJgvmUVKRiYmkWjpjHMaZYKWhyPFsZQECSOxzwMTB7F2rcqCsWZ-FWYJMz6iYeTSWoL5KupbgbLJjmyusaaKsYY7OIFn50SF+m8mZEX2mFVC1vWfyEHwZD4L8fwALaEClYBpVumVIYiQlZD2Cj2coBT6KR8rRrJByOCaOI+CGqwlG+HRzjR9y6aFrX8tNEqzci6w6uiFJXk5OTLAoGoFJ4wb6D4NKKlqppUSdTK3NabJDVBSUSJaoOslAfHcJZM2tnI6y5BS3iuOexT5OUWyNNqRjKFVughgotJA1pMMsjaDqQ7B0NWnDfEJEjN0oxhokqn2aa1ZOBKbQ06imKSCqrLo6wNVcsO0xD0EM4QADqOATC8lBoEu+DsTg3x4LWAAUdQcAAlJQH7SzT4PcvLcFKyrYgvNd-oHlo8b9ro8oqMY+TGBq5NfR4pgvuT9RqUoUsg5brxy1Dduq-DGsEHrhA63rfyG5Spvm5HYPR9bsfK-HFlNllt2VGOhDeUqBQUhhqx9n79Qdst6xXlOfYR9Tud0zbEgxXFhCa8n2dd3DPdQ071lzajanqPY54ThoWoOPhskOAsOoYo+8peDolFnBIAgQHA0gj70YBs87NlyDVOrKIHz7KHjdjYaJ5jYeJeimCindM7T41006pfKeyJ0TxjMMobwjlHKeAfDeMwb9ExHi8D4LGncFw-hXDgYB2VpTUlEt4CcY4ijPXemvQq6NFT6l0EUPegNjpUwAKJ1n+DgsuCAUTaFEmRYOECoHFDIVsIchMTRThqFOUwR16TA2zGdZqUU2qcW4kAkuyMDyKEKqJXQmEfb9jPB9PU6hXKFXJpGYw6C5F6QUeFWgHVLoX1UezdRSoEEhinEqYOR4Nr4zAVSWBalyYuMaBYpqVjOqECwHFNhKN-EnhODSXQtQpxlS2PqL6RpcIuGWt5EJ50WrpTBNE9RDQuFiSXk0A4S8ZJbGkggtw3kIzLGUgqSiDCLR-ytgCXuo8bRFOvioPKKg1JuEVIqeoLQNRYx1OeNUZ5aj5ACpTdpMtOn01tqgHAEAti7icf06SThYxFDHH9WMfsMTqBofodYGJliLLaVmDpecukF3tr0xxV85o7Q7KtYwFTqQeEmU0aZSh6i1x7CocOSyHkrKeWs2aAl2FyAOoQDG-YmhKBxjSDU54uEHBBROAZS81IRz6dPBwyk77KVJrvDFGpZhxkVMsNS9RdBLE0IEQIQA */
   createMachine(
     {
       context: {
@@ -211,11 +212,6 @@ export const rexDataMachine =
                   },
                 ],
               },
-              on: {
-                'Auth token received': {
-                  target: 'Checking',
-                },
-              },
             },
           },
           onDone: {
@@ -317,47 +313,35 @@ export const rexDataMachine =
               if (!token) {
                 throw new Error('No auth token')
               }
-              const { endpoint, config } = buildQueryConfig({
-                route,
-                token,
-                payload: validatePayload(route, payload),
-              } as QueryConfigArgs)
 
-              fetch(`${REX_BASE_URL}${endpoint}`, config)
-                .then((res) => res.json())
-                .then((data) => {
-                  try {
-                    const { result, error } = queryConfigs[
-                      route
-                    ].responseValidator
-                      .or(errorResponseSchema)
-                      .parse(data)
-
-                    if (error) {
-                      if (error.type === 'TokenException') {
-                        console.error(
-                          error.type,
-                          JSON.stringify(
-                            tokenRef.getSnapshot()?.context,
-                            null,
-                            2
-                          )
-                        )
-                        return send({ type: 'Renew expired token' })
-                      }
-                      return send({ type: 'Handle error', error })
+              request({ route, token, payload })
+                .then(({ result, error }) => {
+                  if (error) {
+                    if (error.type === 'TokenException') {
+                      console.error(
+                        error.type,
+                        JSON.stringify(tokenRef.getSnapshot()?.context, null, 2)
+                      )
+                      return send({
+                        type: 'Renew expired token',
+                      })
                     }
                     return send({
-                      type: 'Handle response',
-                      data: result,
-                      stale: false,
+                      type: 'Handle error',
+                      error,
                     })
-                  } catch (err) {
-                    console.error(
-                      'RESPONSE ERROR',
-                      `${JSON.stringify(err, null, 2)}`
-                    )
                   }
+                  return send({
+                    type: 'Handle response',
+                    data: result,
+                    stale: false,
+                  })
+                })
+                .catch((err) => {
+                  console.error(
+                    'RESPONSE ERROR',
+                    `${JSON.stringify(err, null, 2)}`
+                  )
                 })
             } catch (err) {
               throw new Error(`${JSON.stringify(err, null, 2)}`)
