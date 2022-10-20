@@ -11,7 +11,6 @@
 import { createServer } from '@graphql-yoga/common'
 import { resolvers } from './graphql/resolvers'
 import { typeDefs } from './graphql/schemas'
-import { queryConfigs } from './lib/config'
 import { rex } from './lib/rex'
 import type { QueryType } from './lib/types'
 
@@ -43,17 +42,9 @@ function startGraphQLServer() {
   }).start()
 }
 
-async function fetchData(route: string, payload: string) {
-  if (!Object.keys(queryConfigs).includes(route)) {
-    throw new Error(`"${route}" is not a valid query type`)
-  }
-
-  const response = await rex(route as QueryType, payload)
-  return JSON.stringify(response)
-}
-
 async function handleRequest(route: string, payload: string) {
-  return new Response(await fetchData(route, payload), jsonHeader)
+  const response = await rex(route as QueryType, payload)
+  return new Response(JSON.stringify(response), jsonHeader)
 }
 
 function getRequestParameters(request: Request) {
@@ -71,7 +62,7 @@ addEventListener('fetch', ({ request, respondWith }) => {
   }
 
   try {
-    respondWith(handleRequest(route, payload))
+    respondWith(handleRequest(route as QueryType, payload))
   } catch (err) {
     console.error(JSON.stringify(err, null, 2))
     respondWith(new Response(err as string, { ...jsonHeader, status: 500 }))

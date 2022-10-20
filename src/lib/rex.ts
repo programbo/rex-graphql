@@ -1,12 +1,18 @@
 import { interpret } from 'xstate'
 import { waitFor } from 'xstate/lib/waitFor'
 import { rexDataMachine } from '../rexData.machine'
+import { queryConfigs } from './config'
 import { QueryType } from './types'
 
 export async function rex<T extends { result: any }>(
   route: QueryType,
   payload: string = ''
 ): Promise<T['result']> {
+  // Abort early if the route is not supported
+  if (!Object.keys(queryConfigs).includes(route)) {
+    throw new Error(`"${route}" is not a valid query type`)
+  }
+
   // Start the REX data service
   const rexService = interpret(rexDataMachine).start()
 
