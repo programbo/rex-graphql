@@ -9,6 +9,6 @@ export const resolvers = {
     listing: async (_: unknown, { id }: { id: string }) =>
       await rex<ListingResponse>('listing', id),
     explore: async (_: unknown, { suburb }: { suburb: string }) =>
-      await rex<ListingsResponse>('explore', suburb),
+      (await rex<ListingsResponse>('explore', suburb)).rows,
   },
 }
