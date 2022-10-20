@@ -34,48 +34,46 @@ const jsonHeader: ResponseInit = {
   },
 }
 
-async function fetchData(route: QueryType, payload: string) {
-  try {
-    const response = await rex(route, payload)
+const graphQLServer = startGraphQLServer()
 
-    return new Response(JSON.stringify(response), jsonHeader)
-  } catch (err) {
-    console.error(JSON.stringify(err, null, 2))
-    return new Response(err as string, {
-      ...jsonHeader,
-      status: 500,
-    })
-  }
-}
-
-function handlePostRequest() {
-  const server = createServer<Env>({
-    schema: {
-      typeDefs,
-      resolvers,
-    },
+function startGraphQLServer() {
+  return createServer<Env>({
+    schema: { typeDefs, resolvers },
     endpoint: '/gql',
-  })
-
-  return server.start()
+  }).start()
 }
 
-addEventListener('fetch', (event) => {
-  const { pathname } = new URL(event.request.url)
+async function fetchData(route: string, payload: string) {
+  if (!Object.keys(queryConfigs).includes(route)) {
+    throw new Error(`"${route}" is not a valid query type`)
+  }
+
+  const response = await rex(route as QueryType, payload)
+  return JSON.stringify(response)
+}
+
+async function handleRequest(route: string, payload: string) {
+  return new Response(await fetchData(route, payload), jsonHeader)
+}
+
+function getRequestParameters(request: Request) {
+  const { pathname } = new URL(request.url)
   const [, query, payload] = pathname.split('/')
   const route = query || 'listings'
+  return [route, payload]
+}
+
+addEventListener('fetch', ({ request, respondWith }) => {
+  const [route, payload] = getRequestParameters(request)
 
   if (route === 'gql') {
-    return handlePostRequest()
+    return graphQLServer
   }
 
-  if (!Object.keys(queryConfigs).includes(route)) {
-    return event.respondWith(
-      new Response(`"${route}" is not a valid query type`, {
-        status: 500,
-      })
-    )
+  try {
+    respondWith(handleRequest(route, payload))
+  } catch (err) {
+    console.error(JSON.stringify(err, null, 2))
+    respondWith(new Response(err as string, { ...jsonHeader, status: 500 }))
   }
-
-  return event.respondWith(fetchData(route as QueryType, payload))
 })
