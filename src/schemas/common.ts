@@ -19,14 +19,15 @@ export const listingUserSchema = z
   .nullable()
 
 export const listingAssetSchema = z.object({
-  // uri: z.string(),
+  uri: z.string(),
   url: z.string(),
 })
 
 export const listingImageSchema = listingAssetSchema
   .extend({
-    // thumbs: z.record(listingAssetSchema),
+    thumbs: z.record(listingAssetSchema),
   })
+  .transform(({ url }) => url)
   .nullable()
 
 export const rexEnumSchema = z
@@ -141,14 +142,15 @@ export const listingCompanyContactSchema = listingContactSchema
   })
   .nullable()
 
-export const listingExtendedImageSchema = listingImageSchema.unwrap().extend({
-  // id: z.number(),
-  // system_modtime: z.number(),
-  // priority: z.string(),
-  // inbound_original_src_url: z.string().nullable(),
-  // inbound_last_update: z.string().nullable(),
-  // inbound_index: z.string().nullable(),
-})
+export const listingExtendedImageSchema = listingImageSchema
+// .unwrap().extend({
+// id: z.number(),
+// system_modtime: z.number(),
+// priority: z.string(),
+// inbound_original_src_url: z.string().nullable(),
+// inbound_last_update: z.string().nullable(),
+// inbound_index: z.string().nullable(),
+// })
 
 export const listingExtendedAttributesSchema = z.object({
   attr_build_year: z.string().nullable(),

@@ -14,10 +14,6 @@ export const typeDefs = gql`
     email_address: String
   }
 
-  type PropertyImage {
-    url: String
-  }
-
   type Property {
     business_name: String
     etag: String
@@ -56,7 +52,7 @@ export const typeDefs = gql`
     attr_total_car_accom: String
     attr_landarea_unit: Enum
     system_owner_user: SystemOwnerUser
-    property_image: PropertyImage
+    property_image: String
     property_category: Enum
   }
 
@@ -77,7 +73,7 @@ export const typeDefs = gql`
     id: Int
   }
 
-  type Images {
+  type Image {
     url: String
   }
 
@@ -120,7 +116,7 @@ export const typeDefs = gql`
     phone_mobile: String
     position: String
     is_account_user: String
-    profile_image: Images
+    profile_image: String
   }
 
   type ListingEvents {
@@ -180,9 +176,9 @@ export const typeDefs = gql`
     listing_subcategories: [ListingSubcategories]
     listing_links: [ListingLinks]
     listing_holidaybookings: [String]
-    listing_floorplans: [Images]
+    listing_floorplans: [String]
     listing_documents: [ListingDocuments]
-    listing_images: [Images]
+    listing_images: [String]
     listing_events: [ListingEvents]
     listing_adverts: [ListingAdverts]
     listing_allowances: [String]

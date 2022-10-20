@@ -6,7 +6,6 @@ import {
   listingCompanyContactSchema,
   listingUserSchema,
   rexEnumSchema,
-  rexMetaSchema,
 } from './common'
 
 const listingSchema = z.object({

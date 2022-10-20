@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { rexMetaSchema } from './common'
 
 export const authResponseSchema = z.object({
   error: z.null(),
